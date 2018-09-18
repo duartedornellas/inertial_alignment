@@ -16,8 +16,8 @@
 typedef struct alignment_data{
     double pitch;
     double roll;
-    Eigen::Matrix3d R;
-} alignment;
+    Eigen::Matrix3d R; // bRw - Rotates from the world to the body frame
+} alignment;           //       Update to use quaternions
 
 class imu{
     public:
@@ -39,6 +39,16 @@ class camera{
         Eigen::Vector4d distortion;
         Eigen::Vector4d intrinsics;
         Eigen::Matrix4d extrinsics;
+        void print();
+};
+
+class pose{
+    public:
+        Eigen::Vector3d velocity;
+        Eigen::Vector3d position;
+        Eigen::Matrix3d orientation;    // Update to use quaternions
+        int initialize(imu &s);
+        int update(Eigen::Vector3d &a, Eigen::Vector3d &w);
         void print();
 };
 

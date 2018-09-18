@@ -1,6 +1,6 @@
 
 /*---------------------------- CLASS METHODS ---------------------------------*/
-
+/* IMU */
 void imu::print(){
     std::cout << "Rate: \n" << this->rate << '\n'
               << "Gyroscope noise density: \n" << this->gyroscope_nd << '\n'
@@ -29,6 +29,7 @@ void imu::align(Eigen::MatrixXd &data, int samples){
                          cos(x)*sin(y), -sin(x), cos(x)*cos(y);
 }
 
+/* Camera */
 void camera::print(){
     std::cout << "Rate: \n" << this->rate << '\n'
               << "Resolution: \n" << this->resolution.transpose() << '\n'
@@ -37,8 +38,25 @@ void camera::print(){
               << "Extrinsics: \n" << this->extrinsics << "\n\n";
 }
 
-/*------------------------------ FUNCTIONS -----------------------------------*/
+/* Pose */
+int pose::initialize(imu &s){
+    this->position << 0, 0, 0;
+    this->orientation = s.alignment.R;
+    return 1;
+}
 
+int pose::update(Eigen::Vector3d &a, Eigen::Vector3d &w){
+    // FAZER, ver documento do woodman - introduction to inertial navigation
+    return 0;
+}
+
+void pose::print(){
+    std::cout << "Position: \n" << this->position.transpose() << '\n'
+              << "Orientation: \n" << this->orientation << "\n\n";
+}
+
+/*------------------------------ FUNCTIONS -----------------------------------*/
+/* Data I/O */
 int loadCSV(std::string &filename, Eigen::MatrixXd &data){
     // Load data in std vector of std vectors
     std::vector<std::vector<double> > data_matrix;
