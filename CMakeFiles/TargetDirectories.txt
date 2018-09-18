@@ -1,1 +1,0 @@
-/home/ddornellas/Desktop/inertial_alignment/CMakeFiles/inertial_alignment.dir

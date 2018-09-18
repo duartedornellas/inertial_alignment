@@ -1,1 +1,0 @@
-/usr/bin/c++    -std=c++11    CMakeFiles/inertial_alignment.dir/inertial_alignment.cpp.o  -o inertial_alignment -rdynamic 
