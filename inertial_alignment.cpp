@@ -6,7 +6,7 @@ int main (int argc, char *argv[])
 {
     std::string folder;
     if(argc==1){
-        folder = "./Data";
+        folder = "../01 Datasets/The EuRoc MAV Dataset/raw/V1_01_easy/mav0";
     }
     else if(argc==2){
         folder = argv[1];
@@ -17,31 +17,42 @@ int main (int argc, char *argv[])
         return 0;
     }
 
-    std::string filename_data   (folder+"/imu/data.csv");
-    std::string filename_imu    (folder+"/imu/sensor.yaml");
-    std::string filename_camera (folder+"/cam0/sensor.yaml");
+    std::string filename_data_mle     (folder+"/state_groundtruth_estimate0/data.csv");
+    std::string filename_data_vicon   (folder+"/vicon0/data.csv");
+    std::string filename_data_imu     (folder+"/imu0/data.csv");
+    std::string filename_specs_mle    (folder+"/state_groundtruth_estimate0/sensor.yaml");
+    std::string filename_specs_vicon  (folder+"/vicon0/sensor.yaml");
+    std::string filename_specs_imu    (folder+"/imu0/sensor.yaml");
 
-    Eigen::MatrixXd data(3,3);    // Arbitrary initialization, resized in 'loadCSV'
+    ground_truth gt("mle");
+    imu   my_imu;
+    pose  my_pose, my_pose_error;
 
-    imu my_imu;
-    camera my_cam;
-    pose my_pose;
-
-    if(loadCSV(filename_data, data) &&
-       loadYAML<imu>(filename_imu, my_imu) &&
-       loadYAML<camera>(filename_camera, my_cam))
+    if(loadCSV(filename_data_mle, gt.data) &&
+       loadCSV(filename_data_imu, my_imu.data) &&
+       loadYAML<ground_truth>(filename_specs_mle, gt) &&
+       loadYAML<imu>(filename_specs_imu, my_imu))
    {
-        std::cout << "Success loading all files. \n\n";
+       align_datasets(gt, my_imu);
+        // gt.print();
+        gt.print(0);
 
-        my_imu.align(data, 10);
-        my_imu.print();
-        my_cam.print();
-
-        my_pose.initialize(my_imu);
+        my_imu.initialize(gt, 10);
+        my_pose.initialize(gt, my_imu);
         my_pose.print();
-        // inertial navigation, now!
 
+        /*-------------------- Inertial navigation debug ---------------------*/
+        // Eigen::Vector3d wb(0,0,0);
+        // Eigen::Vector3d aw(0,0,-G);
+        // Eigen::Vector3d ab;
+        // ab = -my_pose.orientation.transpose()*aw;
+
+        for(int i=0; i<1; i++){
+            my_pose.update(my_imu, i);
+        }
+        my_pose.print();
+        compute_error(my_pose_error, my_pose, gt);
+        /*--------------------------------------------------------------------*/
     }
-
     return 0;
 }
