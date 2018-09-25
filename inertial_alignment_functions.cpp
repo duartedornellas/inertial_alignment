@@ -17,6 +17,22 @@ ground_truth::ground_truth(std::string t){
     }
 }
 
+int ground_truth::get_pose(pose &pose_gt, int row){
+    if(row < this->data.rows()){
+        pose_gt.timestamp = this->data(row,0);
+        pose_gt.position  = this->data.block(row,1,1,3).transpose();
+        pose_gt.velocity  = this->data.block(row,8,1,3).transpose();
+        Eigen::Quaterniond q_gt;
+        q_gt.w()   = this->data(row,4);
+        q_gt.vec() = this->data.block(row,5,1,3).transpose();
+        pose_gt.orientation  = q_gt;
+        return 1;
+    }
+    else{
+        return 0;
+    }
+}
+
 void ground_truth::print(){
     // Print ground truth type;
     std::cout << '\n'
@@ -30,7 +46,7 @@ void ground_truth::print(int index){
         // this->print();
 
         // Print i-th line GT data
-        std::cout << '\n';
+        std::cout << std::fixed;
         std::cout << "GT - Timestamp, i = " << index << ": \n"
                   << this->data(index,0) << '\n';
         std::cout << "GT - Position, i = " << index << ": \n"
@@ -41,7 +57,7 @@ void ground_truth::print(int index){
                   << this->data(index,4) << ", "
                   << this->data(index,5)
                   << this->data(index,6)
-                  << this->data(index,7) << '\n';
+                  << this->data(index,7) << "\n\n";
 }
 
 /* Vicon */
@@ -122,12 +138,12 @@ int pose::initialize(ground_truth &gt, imu &s){
     return 1;
 }
 
-int pose::update(imu &s, int index){
+int pose::update(imu &s, int row){
     // Get imu measurements
-    double t = s.data(index,0);
+    double t = s.data(row,0);
     Eigen::Vector3d ab, wb;
-    ab << s.data(index,1), s.data(index,2), s.data(index,3);
-    wb << s.data(index,4), s.data(index,5), s.data(index,6);
+    ab << s.data(row,1), s.data(row,2), s.data(row,3);
+    wb << s.data(row,4), s.data(row,5), s.data(row,6);
 
     double rate = s.rate;
     double dt = 1/rate;
@@ -166,8 +182,9 @@ int pose::update(imu &s, int index){
 void pose::print(){
     Eigen::Quaterniond orientation_quaternion;
     orientation_quaternion = this->orientation;
-    std::cout << '\n'
-              << "Timestamp:\n" << this->timestamp << '\n'
+    std::cout << std::fixed;
+    std::cout << '\n';
+    std::cout << "Timestamp:\n" << this->timestamp << '\n'
               << "Position: \n" << this->position.transpose() << '\n'
               << "Velocity: \n" << this->velocity.transpose() << "\n"
               << "Orientation: \n" << orientation_quaternion.w() << ", "
@@ -568,13 +585,29 @@ template<class sensor> int loadYAML(std::string &filename, sensor &s){
 }
 
 /* Misc */
-void compute_error(pose &p_error, pose &p, ground_truth &gt){
-    int index = find_index(p.timestamp, gt);
-    if(index != -1 && index < gt.data.rows()){ // check timestamp validity
-        // fazer contas
+void compute_error(pose &p_error, pose &p, pose &p_gt){
+    // check timestamp validity
+    // int index = find_index(p.timestamp, gt);
+    // if(index != -1 && index < gt.data.rows() && p.timestamp == gt.data(index,0)){
+    if(p.timestamp == p_gt.timestamp){
+        // update error pose object
+        p_error.timestamp = p.timestamp;
+        p_error.position  = p_gt.position - p.position;
+        p_error.velocity  = p_gt.velocity - p.velocity;
+        p_error.orientation = p_gt.orientation * p.orientation.conjugate();
+        // print stuff
+        // std::cout << "Estimated pose:";
+        // p.print();
+        // std::cout << "Ground truth pose:";
+        // p_gt.print();
+        // std::cout << "Error pose (Ground Truth - Estimated):";
+        p_error.print();
     }
     else{
-        std::cout << "Unaligned imu/ground_truth timestamps. \n";
+        std::cout << std::fixed;
+        std::cout << "Unaligned imu/ground_truth timestamps: \n"
+                  <<  p.timestamp << '\n'
+                  <<  p_gt.timestamp << '\n';
     }
 }
 
@@ -593,9 +626,9 @@ void align_datasets(ground_truth &gt, imu &s){
 
 int find_index(double t, ground_truth &gt){
     if(t < gt.data(0,0)){
-      std::cout << "(t_imu < t_gt) --> "
+      std::cout << "(t_imu < t_gt) --> Deleting "
                 << (gt.data(0,0)-t) * pow(10,-9) * 200
-                << " samples to go. \n";
+                << " samples... \n";
       return -1;
     }
     for(int index=0; index<gt.data.rows(); index++){

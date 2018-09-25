@@ -26,32 +26,24 @@ int main (int argc, char *argv[])
 
     ground_truth gt("mle");
     imu   my_imu;
-    pose  my_pose, my_pose_error;
+    pose  my_pose, my_pose_error, my_pose_gt;
 
     if(loadCSV(filename_data_mle, gt.data) &&
        loadCSV(filename_data_imu, my_imu.data) &&
        loadYAML<ground_truth>(filename_specs_mle, gt) &&
        loadYAML<imu>(filename_specs_imu, my_imu))
    {
-       align_datasets(gt, my_imu);
-        // gt.print();
-        gt.print(0);
+        align_datasets(gt, my_imu);
 
         my_imu.initialize(gt, 10);
         my_pose.initialize(gt, my_imu);
-        my_pose.print();
 
         /*-------------------- Inertial navigation debug ---------------------*/
-        // Eigen::Vector3d wb(0,0,0);
-        // Eigen::Vector3d aw(0,0,-G);
-        // Eigen::Vector3d ab;
-        // ab = -my_pose.orientation.transpose()*aw;
-
-        for(int i=0; i<1; i++){
+        for(int i=0; i<5; i++){
+            gt.get_pose(my_pose_gt, i);
             my_pose.update(my_imu, i);
+            compute_error(my_pose_error, my_pose, my_pose_gt);
         }
-        my_pose.print();
-        compute_error(my_pose_error, my_pose, gt);
         /*--------------------------------------------------------------------*/
     }
     return 0;

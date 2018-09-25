@@ -12,7 +12,10 @@
 
 
 /*-------------------------------- CLASSES -----------------------------------*/
+//--- Codependent classes declaration
+class pose;
 
+//--- Classes definition
 typedef struct alignment_data{
     double pitch;
     double roll;
@@ -48,6 +51,7 @@ class ground_truth{
         Eigen::MatrixXd data;
         //--- 'ground_truth' methods
         ground_truth(std::string t);
+        int  get_pose(pose &pose_gt, int row);
         void print();
         void print(int index);
 };
@@ -92,7 +96,7 @@ class pose{
         Eigen::Vector3d velocity;
         Eigen::Matrix3d orientation;    // wRb, Update to quaternions
         int initialize(ground_truth &gt, imu &s);
-        int update(imu &s, int index);
+        int update(imu &s, int row);
         void print();
 };
 
@@ -108,7 +112,7 @@ template<> int loadYAML<imu>(std::string &filename, imu &s);
 template<> int loadYAML<camera>(std::string &filename, camera &s);
 
 /* Misc */
-void compute_error(pose &p_error, pose &p, ground_truth &gt);
+void compute_error(pose &p_error, pose &p, pose & p_gt);
 
 void align_datasets(ground_truth &gt, imu &s);
 int  find_index(double t, ground_truth &gt);
